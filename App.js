@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 export default function App() {
@@ -19,7 +20,7 @@ export default function App() {
     setTasks(tasks.filter((task) => task.id !== id));
   };
 
-  // Wykonanie zadnia
+  // Oznaczanie zadania jako wykonane
   const toggleTaskCompletion = (id) => {
     setTasks(
       tasks.map((task) =>
@@ -29,53 +30,60 @@ export default function App() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>To-Do List</Text>
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Add a new task"
-          value={task}
-          onChangeText={setTask}
-        />
-        <TouchableOpacity style={styles.addButton} onPress={addTask}>
-          <Text style={styles.addButtonText}>+</Text>
-        </TouchableOpacity>
-      </View>
-      <FlatList
-        data={tasks}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.taskContainer}>
-            <TouchableOpacity onPress={() => toggleTaskCompletion(item.id)}>
-              <Icon
-                name={item.completed ? 'check-circle' : 'radio-button-unchecked'}
-                size={24}
-                color={item.completed ? '#007bff' : 'gray'}
-              />
-            </TouchableOpacity>
-            <Text
-              style={[
-                styles.taskText,
-                item.completed && styles.completedTaskText,
-              ]}
-            >
-              {item.text}
-            </Text>
-            <TouchableOpacity onPress={() => deleteTask(item.id)}>
-              <Icon name="delete" size={24} color="red" />
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <Text style={styles.header}>To-Do List</Text>
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="Add a new task"
+              value={task}
+              onChangeText={setTask}
+            />
+            <TouchableOpacity style={styles.addButton} onPress={addTask}>
+              <Text style={styles.addButtonText}>+</Text>
             </TouchableOpacity>
           </View>
-        )}
-      />
-    </View>
+          <FlatList
+            data={tasks}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <View style={styles.taskContainer}>
+                <TouchableOpacity onPress={() => toggleTaskCompletion(item.id)}>
+                  <Icon
+                    name={item.completed ? 'check-circle' : 'radio-button-unchecked'}
+                    size={24}
+                    color={item.completed ? '#007bff' : 'gray'}
+                  />
+                </TouchableOpacity>
+                <Text
+                  style={[
+                    styles.taskText,
+                    item.completed && styles.completedTaskText,
+                  ]}
+                >
+                  {item.text}
+                </Text>
+                <TouchableOpacity onPress={() => deleteTask(item.id)}>
+                  <Icon name="delete" size={24} color="red" />
+                </TouchableOpacity>
+              </View>
+            )}
+          />
+        </View>
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  container: {
+    flex: 1,
     padding: 20,
   },
   header: {
