@@ -3,17 +3,25 @@ import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList } from 'r
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import * as ScreenOrientation from 'expo-screen-orientation';
+import SplashScreen from "./components/SplashScreen";
 
 export default function App() {
   const [task, setTask] = useState('');
   const [tasks, setTasks] = useState([]);
+  const [isSplashVisible, setIsSplashVisible] = useState(true);
 
-  // Obsługa zmiany orientacji urządzenia
+  // Obsługa zmiany orientacji urządzenia i splashScreen
   useEffect(() => {
     const enableRotation = async () => {
       await ScreenOrientation.unlockAsync();
     };
     enableRotation();
+
+    const splashTimeout = setTimeout(() => {
+      setIsSplashVisible(false);
+    }, 3000);
+
+    return () => clearTimeout(splashTimeout);
   }, []);
 
   // Dodawanie zadania
@@ -37,6 +45,10 @@ export default function App() {
       )
     );
   };
+
+  if (isSplashVisible) {
+    return <SplashScreen />;
+  }
 
   return (
     <SafeAreaProvider>
