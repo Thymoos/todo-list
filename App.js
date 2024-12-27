@@ -4,6 +4,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import SplashScreen from "./components/SplashScreen";
+import { Picker } from "@react-native-picker/picker";
 
 export default function App() {
   const [task, setTask] = useState('');
@@ -11,8 +12,8 @@ export default function App() {
   const [isSplashVisible, setIsSplashVisible] = useState(true);
   const [selectedTask, setSelectedTask] = useState(null);
   const [newTaskText, setNewTaskText] = useState('');
+  const [isSettingsVisible, setIsSettingsVisible] = useState(false); // Side panel visibility
 
-  // Obsługa zmiany orientacji urządzenia i splashScreen
   useEffect(() => {
     const enableRotation = async () => {
       await ScreenOrientation.unlockAsync();
@@ -26,7 +27,6 @@ export default function App() {
     return () => clearTimeout(splashTimeout);
   }, []);
 
-  // Dodawanie zadania
   const addTask = () => {
     if (task.trim()) {
       setTasks([...tasks, { id: Date.now().toString(), text: task, completed: false }]);
@@ -34,12 +34,10 @@ export default function App() {
     }
   };
 
-  // Usuwanie zadania
   const deleteTask = (id) => {
     setTasks(tasks.filter((task) => task.id !== id));
   };
 
-  // Oznaczanie zadania jako wykonane
   const toggleTaskCompletion = (id) => {
     setTasks(
         tasks.map((task) =>
@@ -48,19 +46,16 @@ export default function App() {
     );
   };
 
-  // Otwieranie modala z edycją
   const openTaskDetails = (task) => {
     setSelectedTask(task);
     setNewTaskText(task.text);
   };
 
-  // Zamykanie modala
   const closeTaskDetails = () => {
     setSelectedTask(null);
     setNewTaskText('');
   };
 
-  // Zapisanie zmian w zadaniu
   const saveTask = () => {
     setTasks(
         tasks.map((task) =>
@@ -70,6 +65,10 @@ export default function App() {
     closeTaskDetails();
   };
 
+  const toggleSettings = () => {
+    setIsSettingsVisible(!isSettingsVisible);
+  };
+
   if (isSplashVisible) {
     return <SplashScreen />;
   }
@@ -77,8 +76,11 @@ export default function App() {
   return (
       <SafeAreaProvider>
         <SafeAreaView style={styles.safeArea}>
-          <View style={styles.container}>
+          <View style={[styles.container]}>
             <Text style={styles.header}>To-Do List</Text>
+            <TouchableOpacity style={styles.settingsButton} onPress={toggleSettings}>
+              <Icon name="settings" size={24} color="gray" />
+            </TouchableOpacity>
             <View style={styles.inputContainer}>
               <TextInput
                   style={styles.input}
@@ -102,7 +104,7 @@ export default function App() {
                             color={item.completed ? '#007bff' : 'gray'}
                         />
                       </TouchableOpacity>
-                      <TouchableOpacity onPress={() => openTaskDetails(item)} style={{flex: 1}}>
+                      <TouchableOpacity onPress={() => openTaskDetails(item)} style={{ flex: 1 }}>
                         <Text
                             style={[
                               styles.taskText,
@@ -120,13 +122,20 @@ export default function App() {
             />
           </View>
 
-          {/* Modal dla edycji zadań*/}
+          {/* Przyciemnienie dla tła modala ustawień */}
+          {isSettingsVisible && <View style={styles.overlay} onTouchStart={toggleSettings} h></View>}
+
+          {/* Modal ustwień */}
+          {isSettingsVisible && (
+              <View style={styles.settingsPanel}>
+                <Text style={styles.settingsHeader}>Settings</Text>
+                <Text style={styles.settingsText}>This view needs to exist but I have no idea what to put here so it's just a placeholder :></Text>
+              </View>
+          )}
+
+          {/* Modal for task editing */}
           {selectedTask && (
-              <Modal
-                  visible={true}
-                  animationType="slide"
-                  onRequestClose={closeTaskDetails}
-              >
+              <Modal visible={true} animationType="slide" onRequestClose={closeTaskDetails}>
                 <View style={styles.modalContainer}>
                   <Text style={styles.modalHeader}>Edit Task</Text>
                   <TextInput
@@ -164,6 +173,46 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 20,
     textAlign: 'center',
+  },
+  settingsButton: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+  },
+  settingsPanel: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    width: '50%',
+    backgroundColor: '#fff',
+    padding: 20,
+    zIndex: 10,
+  },
+  settingsHeader: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    marginTop: 30
+  },
+  settingsText: {
+    fontSize: 16,
+    marginTop: 20,
+    marginBottom: 20
+  },
+  picker: {
+    height: 50,
+    width: '100%',
+    marginBottom: 20,
+  },
+  closeButton: {
+    backgroundColor: '#007bff',
+    padding: 10,
+    borderRadius: 5,
+  },
+  closeButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
   inputContainer: {
     flexDirection: 'row',
@@ -258,4 +307,13 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    zIndex: 5,
+  }
 });
