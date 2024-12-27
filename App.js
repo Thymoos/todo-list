@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, Modal } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import SplashScreen from "./components/SplashScreen";
-import { Picker } from "@react-native-picker/picker";
 
 export default function App() {
   const [task, setTask] = useState('');
@@ -24,26 +24,53 @@ export default function App() {
       setIsSplashVisible(false);
     }, 3000);
 
+    loadTasks(); // Load tasks from AsyncStorage
+
     return () => clearTimeout(splashTimeout);
   }, []);
 
+  // Load tasks from AsyncStorage
+  const loadTasks = async () => {
+    try {
+      const storedTasks = await AsyncStorage.getItem('tasks');
+      if (storedTasks) {
+        setTasks(JSON.parse(storedTasks));
+      }
+    } catch (error) {
+      console.error('Failed to load tasks', error);
+    }
+  };
+
+  // Save tasks to AsyncStorage
+  const saveTasks = async (updatedTasks) => {
+    try {
+      await AsyncStorage.setItem('tasks', JSON.stringify(updatedTasks));
+    } catch (error) {
+      console.error('Failed to save tasks', error);
+    }
+  };
+
   const addTask = () => {
     if (task.trim()) {
-      setTasks([...tasks, { id: Date.now().toString(), text: task, completed: false }]);
+      const newTasks = [...tasks, { id: Date.now().toString(), text: task, completed: false }];
+      setTasks(newTasks);
+      saveTasks(newTasks);
       setTask('');
     }
   };
 
   const deleteTask = (id) => {
-    setTasks(tasks.filter((task) => task.id !== id));
+    const updatedTasks = tasks.filter((task) => task.id !== id);
+    setTasks(updatedTasks);
+    saveTasks(updatedTasks);
   };
 
   const toggleTaskCompletion = (id) => {
-    setTasks(
-        tasks.map((task) =>
-            task.id === id ? { ...task, completed: !task.completed } : task
-        )
+    const updatedTasks = tasks.map((task) =>
+        task.id === id ? { ...task, completed: !task.completed } : task
     );
+    setTasks(updatedTasks);
+    saveTasks(updatedTasks);
   };
 
   const openTaskDetails = (task) => {
@@ -57,11 +84,11 @@ export default function App() {
   };
 
   const saveTask = () => {
-    setTasks(
-        tasks.map((task) =>
-            task.id === selectedTask.id ? { ...task, text: newTaskText } : task
-        )
+    const updatedTasks = tasks.map((task) =>
+        task.id === selectedTask.id ? { ...task, text: newTaskText } : task
     );
+    setTasks(updatedTasks);
+    saveTasks(updatedTasks);
     closeTaskDetails();
   };
 
@@ -76,7 +103,7 @@ export default function App() {
   return (
       <SafeAreaProvider>
         <SafeAreaView style={styles.safeArea}>
-          <View style={[styles.container]}>
+          <View style={styles.container}>
             <Text style={styles.header}>To-Do List</Text>
             <TouchableOpacity style={styles.settingsButton} onPress={toggleSettings}>
               <Icon name="settings" size={24} color="gray" />
@@ -122,18 +149,19 @@ export default function App() {
             />
           </View>
 
-          {/* Przyciemnienie dla tła modala ustawień */}
-          {isSettingsVisible && <View style={styles.overlay} onTouchStart={toggleSettings} h></View>}
+          {/* Settings Modal */}
+          {isSettingsVisible && <View style={styles.overlay} onTouchStart={toggleSettings}></View>}
 
-          {/* Modal ustwień */}
           {isSettingsVisible && (
               <View style={styles.settingsPanel}>
                 <Text style={styles.settingsHeader}>Settings</Text>
-                <Text style={styles.settingsText}>This view needs to exist but I have no idea what to put here so it's just a placeholder :></Text>
+                <Text style={styles.settingsText}>
+                  This view needs to exist but I have no idea what to put here so it's just a placeholder :>
+                </Text>
               </View>
           )}
 
-          {/* Modal for task editing */}
+          {/* Task Details Modal */}
           {selectedTask && (
               <Modal visible={true} animationType="slide" onRequestClose={closeTaskDetails}>
                 <View style={styles.modalContainer}>
