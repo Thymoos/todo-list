@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, Modal } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, Modal, Animated, Easing } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -12,7 +12,9 @@ export default function App() {
   const [isSplashVisible, setIsSplashVisible] = useState(true);
   const [selectedTask, setSelectedTask] = useState(null);
   const [newTaskText, setNewTaskText] = useState('');
-  const [isSettingsVisible, setIsSettingsVisible] = useState(false); // Side panel visibility
+  const [isSettingsVisible, setIsSettingsVisible] = useState(false);
+
+  const slideAnimation = useRef(new Animated.Value(-500)).current;
 
   useEffect(() => {
     const enableRotation = async () => {
@@ -24,12 +26,11 @@ export default function App() {
       setIsSplashVisible(false);
     }, 3000);
 
-    loadTasks(); // Load tasks from AsyncStorage
+    loadTasks();
 
     return () => clearTimeout(splashTimeout);
   }, []);
 
-  // Load tasks from AsyncStorage
   const loadTasks = async () => {
     try {
       const storedTasks = await AsyncStorage.getItem('tasks');
@@ -41,7 +42,6 @@ export default function App() {
     }
   };
 
-  // Save tasks to AsyncStorage
   const saveTasks = async (updatedTasks) => {
     try {
       await AsyncStorage.setItem('tasks', JSON.stringify(updatedTasks));
@@ -93,7 +93,22 @@ export default function App() {
   };
 
   const toggleSettings = () => {
-    setIsSettingsVisible(!isSettingsVisible);
+    if (!isSettingsVisible) {
+      setIsSettingsVisible(true);
+      Animated.timing(slideAnimation, {
+        toValue: 0,
+        duration: 300,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(slideAnimation, {
+        toValue: -500,
+        duration: 300,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }).start(() => setIsSettingsVisible(false));
+    }
   };
 
   if (isSplashVisible) {
@@ -149,19 +164,20 @@ export default function App() {
             />
           </View>
 
-          {/* Settings Modal */}
-          {isSettingsVisible && <View style={styles.overlay} onTouchStart={toggleSettings}></View>}
+          {isSettingsVisible && <View style={styles.overlay} onTouchStart={toggleSettings} />}
 
-          {isSettingsVisible && (
-              <View style={styles.settingsPanel}>
-                <Text style={styles.settingsHeader}>Settings</Text>
-                <Text style={styles.settingsText}>
-                  This view needs to exist but I have no idea what to put here so it's just a placeholder :>
-                </Text>
-              </View>
-          )}
+          <Animated.View
+              style={[
+                styles.settingsPanel,
+                { transform: [{ translateX: slideAnimation }] },
+              ]}
+          >
+            <Text style={styles.settingsHeader}>Settings</Text>
+            <Text style={styles.settingsText}>
+              Placeholder settings panel.
+            </Text>
+          </Animated.View>
 
-          {/* Task Details Modal */}
           {selectedTask && (
               <Modal visible={true} animationType="slide" onRequestClose={closeTaskDetails}>
                 <View style={styles.modalContainer}>
@@ -221,26 +237,12 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 10,
-    marginTop: 30
+    marginTop: 30,
   },
   settingsText: {
     fontSize: 16,
     marginTop: 20,
-    marginBottom: 20
-  },
-  picker: {
-    height: 50,
-    width: '100%',
     marginBottom: 20,
-  },
-  closeButton: {
-    backgroundColor: '#007bff',
-    padding: 10,
-    borderRadius: 5,
-  },
-  closeButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
   },
   inputContainer: {
     flexDirection: 'row',
@@ -275,16 +277,11 @@ const styles = StyleSheet.create({
     padding: 15,
     marginBottom: 10,
     borderRadius: 5,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 5,
   },
   taskText: {
     flex: 1,
     marginLeft: 10,
     fontSize: 16,
-    width: '100%',
   },
   completedTaskText: {
     textDecorationLine: 'line-through',
@@ -343,5 +340,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     zIndex: 5,
-  }
+  },
 });
+
