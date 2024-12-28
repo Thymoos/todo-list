@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, Modal, Animated, Easing } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, Modal, Animated, Easing, ImageBackground } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import SplashScreen from "./components/SplashScreen";
+import NetInfo from '@react-native-community/netinfo';
+
 
 export default function App() {
   const [task, setTask] = useState('');
@@ -13,6 +15,26 @@ export default function App() {
   const [selectedTask, setSelectedTask] = useState(null);
   const [newTaskText, setNewTaskText] = useState('');
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
+  const [taskImage, setTaskImage] = useState(null);
+
+  const fetchTaskImage = async (taskId) => {
+    const state = await NetInfo.fetch();
+    if (state.isConnected) {
+      try {
+        // Adding a random parameter to ensure a new image is fetched
+        const randomParam = Math.floor(Math.random() * 1000);
+        const imageUrl = `https://picsum.photos/seed/${taskId}-${randomParam}/2000/2000`;
+        setTaskImage(imageUrl);
+      } catch (error) {
+        console.error('Error fetching image', error);
+        setTaskImage(null);
+      }
+    } else {
+      console.warn('No internet connection');
+      setTaskImage(null);
+    }
+  };
+
 
   const slideAnimation = useRef(new Animated.Value(-500)).current;
 
@@ -76,7 +98,9 @@ export default function App() {
   const openTaskDetails = (task) => {
     setSelectedTask(task);
     setNewTaskText(task.text);
+    fetchTaskImage(task.id);
   };
+
 
   const closeTaskDetails = () => {
     setSelectedTask(null);
@@ -180,24 +204,33 @@ export default function App() {
 
           {selectedTask && (
               <Modal visible={true} animationType="slide" onRequestClose={closeTaskDetails}>
-                <View style={styles.modalContainer}>
-                  <Text style={styles.modalHeader}>Edit Task</Text>
-                  <TextInput
-                      style={styles.modalInput}
-                      value={newTaskText}
-                      onChangeText={setNewTaskText}
-                  />
-                  <View style={styles.modalButtons}>
-                    <TouchableOpacity style={styles.saveButton} onPress={saveTask}>
-                      <Text style={styles.saveButtonText}>Save</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.cancelButton} onPress={closeTaskDetails}>
-                      <Text style={styles.cancelButtonText}>Cancel</Text>
-                    </TouchableOpacity>
+                <ImageBackground
+                    source={taskImage ? { uri: taskImage } : null}
+                    style={styles.modalContainer}
+                    resizeMode="cover"
+                >
+                  <View style={styles.modalOverlay}>
+                    <Text style={styles.modalHeader}>Edit Task</Text>
+                    <TextInput
+                        style={styles.modalInput}
+                        value={newTaskText}
+                        onChangeText={setNewTaskText}
+                        placeholder="Edit task"
+                    />
+                    <View style={styles.modalButtons}>
+                      <TouchableOpacity style={styles.saveButton} onPress={saveTask}>
+                        <Text style={styles.saveButtonText}>Save</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.cancelButton} onPress={closeTaskDetails}>
+                        <Text style={styles.cancelButtonText}>Cancel</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                </View>
+                </ImageBackground>
               </Modal>
           )}
+
+
         </SafeAreaView>
       </SafeAreaProvider>
   );
@@ -287,13 +320,20 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
     color: '#aaa',
   },
+  modalOverlay: {
+    flex: 1,
+    width: '100%',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    padding: 20,
   },
+
   modalHeader: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -341,5 +381,18 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     zIndex: 5,
   },
+  taskImage: {
+    width: 200,
+    height: 200,
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  imagePlaceholder: {
+    color: '#fff',
+    fontSize: 16,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+
 });
 
