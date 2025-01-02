@@ -17,11 +17,11 @@ export default function App() {
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
   const [taskImage, setTaskImage] = useState(null);
 
+  // Fetchowanie img z API loremPicsum
   const fetchTaskImage = async (taskId) => {
     const state = await NetInfo.fetch();
     if (state.isConnected) {
       try {
-        // Adding a random parameter to ensure a new image is fetched
         const randomParam = Math.floor(Math.random() * 1000);
         const imageUrl = `https://picsum.photos/seed/${taskId}-${randomParam}/2000/2000`;
         setTaskImage(imageUrl);
@@ -35,9 +35,10 @@ export default function App() {
     }
   };
 
-
+// Animacja przesuwania panelu ustawień
   const slideAnimation = useRef(new Animated.Value(-500)).current;
 
+// Funkcja obsługująca rotację ekranu
   useEffect(() => {
     const enableRotation = async () => {
       await ScreenOrientation.unlockAsync();
@@ -53,6 +54,7 @@ export default function App() {
     return () => clearTimeout(splashTimeout);
   }, []);
 
+// Wczytywanie zapisanych zadań
   const loadTasks = async () => {
     try {
       const storedTasks = await AsyncStorage.getItem('tasks');
@@ -64,6 +66,7 @@ export default function App() {
     }
   };
 
+  // Zapisywanie zadań w AsyncStorage
   const saveTasks = async (updatedTasks) => {
     try {
       await AsyncStorage.setItem('tasks', JSON.stringify(updatedTasks));
@@ -72,6 +75,7 @@ export default function App() {
     }
   };
 
+  // Dodawanie nowych zadań
   const addTask = () => {
     if (task.trim()) {
       const newTasks = [...tasks, { id: Date.now().toString(), text: task, completed: false }];
@@ -81,12 +85,14 @@ export default function App() {
     }
   };
 
+  // Usuwanie zadań
   const deleteTask = (id) => {
     const updatedTasks = tasks.filter((task) => task.id !== id);
     setTasks(updatedTasks);
     saveTasks(updatedTasks);
   };
 
+  // Toggle statusu ukończenia
   const toggleTaskCompletion = (id) => {
     const updatedTasks = tasks.map((task) =>
         task.id === id ? { ...task, completed: !task.completed } : task
@@ -95,18 +101,20 @@ export default function App() {
     saveTasks(updatedTasks);
   };
 
+  // Otwieranie szczegółów
   const openTaskDetails = (task) => {
     setSelectedTask(task);
     setNewTaskText(task.text);
     fetchTaskImage(task.id);
   };
 
-
+// Zamykanie szczegółów
   const closeTaskDetails = () => {
     setSelectedTask(null);
     setNewTaskText('');
   };
 
+// Zapisywanie edytowanego zadania
   const saveTask = () => {
     const updatedTasks = tasks.map((task) =>
         task.id === selectedTask.id ? { ...task, text: newTaskText } : task
@@ -116,6 +124,7 @@ export default function App() {
     closeTaskDetails();
   };
 
+  // Ustawienia toggler
   const toggleSettings = () => {
     if (!isSettingsVisible) {
       setIsSettingsVisible(true);
